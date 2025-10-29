@@ -1,0 +1,50 @@
+generator client {
+    provider = "prisma-client-js"
+  }
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+  model User {
+    id        String   @id @default(cuid())
+    email     String   @unique
+    name      String?
+    bio       String?
+    photos    Photo[]
+    likesFrom Like[]   @relation("LikesFrom")
+    likesTo   Like[]   @relation("LikesTo")
+    matchesA  Match[]  @relation("MatchesA")
+    matchesB  Match[]  @relation("MatchesB")
+    createdAt DateTime @default(now())
+  }
+
+  model Photo {
+    id     String @id @default(cuid())
+    url    String
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+  }
+  model Like {
+    id      String @id @default(cuid())
+    fromId  String
+    toId    String
+    from    User   @relation("LikesFrom", fields: [fromId], references: [id])
+    to      User   @relation("LikesTo", fields: [toId], references: [id])
+    createdAt DateTime @default(now())
+  }
+
+  model Match {
+    id      String @id @default(cuid())
+    userAId String
+    userBId String
+    userA   User   @relation("MatchesA", fields: [userAId], references: [id])
+    userB   User   @relation("MatchesB", fields: [userBId], references: [id])
+    createdAt DateTime @default(now())
+  }
+  model Message {
+    id        String   @id @default(cuid())
+    matchId   String
+    senderId  String
+    content   String
+    createdAt DateTime @default(now())
+  }
