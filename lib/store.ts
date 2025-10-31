@@ -195,7 +195,6 @@ export const useAppStore = create<AppStore>()(
           likes: [...state.likes, { userId, likedUserId, createdAt: new Date().toISOString() }],
         }))
 
-        // Check for mutual like
         const { getMutualLike, createMatch } = get()
         if (getMutualLike(userId, likedUserId)) {
           createMatch(userId, likedUserId)
@@ -278,6 +277,8 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: "dating-app-store",
-    },
-  ),
+      // Persist the logged-in user and messages to retain chat history across restarts
+      partialize: (state) => ({ user: state.user, messages: state.messages }),
+    }
+  )
 )

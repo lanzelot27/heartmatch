@@ -1,1 +1,4 @@
-export class CreateMatchDto {}
+export class CreateMatchDto {
+  userAId: string;
+  userBId: string;
+}

@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Edit2, Save, X } from "lucide-react"
+import { updateProfile } from '@/lib/utils';
 
 export function ProfilePage() {
   const { user, users } = useAppStore()
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(user?.name || "")
-  const [editedAge, setEditedAge] = useState(user?.age.toString() || "")
+  const [editedAge, setEditedAge] = useState(user?.age != null ? user.age.toString() : "");
   const [editedBio, setEditedBio] = useState(user?.bio || "")
   const [editedImage, setEditedImage] = useState(user?.profileImage || "")
 
@@ -30,27 +31,20 @@ export function ProfilePage() {
     }
   }
 
-  const handleSave = () => {
-    // Update user in store
-    const updatedUser = {
-      ...user,
-      name: editedName,
-      age: Number.parseInt(editedAge),
-      bio: editedBio,
-      profileImage: editedImage,
+  const handleSave = async () => {
+    try {
+      const updatedUser = await updateProfile(user.id, {
+        name: editedName,
+        age: Number.parseInt(editedAge),
+        bio: editedBio,
+        profileImage: editedImage,
+      });
+      useAppStore.setState({ user: updatedUser });
+      setIsEditing(false);
+    } catch (err) {
+      alert('Failed to update profile.');
     }
-
-    // Update in users array
-    const updatedUsers = users.map((u) => (u.id === user.id ? updatedUser : u))
-
-    // Re-register to update store
-    useAppStore.setState({
-      user: updatedUser,
-      users: updatedUsers,
-    })
-
-    setIsEditing(false)
-  }
+  };
 
   return (
     <div className="max-w-2xl mx-auto">

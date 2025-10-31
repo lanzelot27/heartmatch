@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { useAppStore } from "@/lib/store"
+import { loginProfile, getProfiles, createProfile } from "@/lib/utils"
 import { Heart, ArrowLeft } from "lucide-react"
 
 interface AuthPageProps {
@@ -22,7 +22,9 @@ export function AuthPage({ onBack }: AuthPageProps) {
   const [bio, setBio] = useState("")
   const [profileImage, setProfileImage] = useState<string>("")
   const [error, setError] = useState("")
-  const { login, register } = useAppStore()
+  const [loading, setLoading] = useState(false)
+  // Only keep and set the logged-in user in Zustand for session
+  const setUser = (user: any) => useAppStore.setState({ user })
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -35,40 +37,62 @@ export function AuthPage({ onBack }: AuthPageProps) {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-
-    if (isSignUp) {
-      if (!name || !email || !password || !age || !profileImage) {
-        setError("Please fill in all fields and upload a profile picture")
-        return
+    setLoading(true)
+    try {
+      if (isSignUp) {
+        if (!name || !email || !password || !age || !profileImage) {
+          setError("Please fill in all fields and upload a profile picture")
+          setLoading(false)
+          return
+        }
+        // Fake user creation: send to backend. WARNING: Do not send plaintext passwords in real apps!
+        const newUser = await createProfile({
+          email,
+          name,
+          bio,
+          password,
+          age: Number.parseInt(age),
+          profileImage, // send base64 image as profileImage
+        })
+        setUser(newUser)
+        // ...route to home or dashboard
+      } else {
+        if (!email || !password) {
+          setError("Please enter email and password")
+          setLoading(false)
+          return
+        }
+        try {
+          const user = await loginProfile(email, password);
+          setUser(user);
+          // ...route to home or dashboard
+        } catch (e) {
+          setError("Invalid email or password");
+          setLoading(false);
+          return;
+        }
+        // Basic demo login: fetch all users and check
+        const users = await getProfiles()
+        const user = users.find((u: any) => u.email === email && u.password === password)
+        if (user) {
+          setUser(user)
+          // ...route to home or dashboard
+        } else {
+          setError("Invalid email or password")
+        }
       }
-      register({
-        id: Date.now().toString(),
-        email,
-        password,
-        name,
-        age: Number.parseInt(age),
-        bio,
-        profileImage,
-        createdAt: new Date().toISOString(),
-      })
-    } else {
-      if (!email || !password) {
-        setError("Please enter email and password")
-        return
-      }
-      const success = login(email, password)
-      if (!success) {
-        setError("Invalid email or password")
-        return
-      }
+    } catch (err) {
+      setError("Failed to authenticate. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-50 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-rose-50 to-pink-50 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <button
           onClick={onBack}
@@ -106,7 +130,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="John Doe"
+                      placeholder="Enter your name"
                       className="bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600"
                     />
                   </div>
@@ -118,7 +142,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
                         type="number"
                         value={age}
                         onChange={(e) => setAge(e.target.value)}
-                        placeholder="25"
+                        placeholder="18"
                         className="bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600"
                       />
                     </div>
@@ -191,8 +215,8 @@ export function AuthPage({ onBack }: AuthPageProps) {
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2">
-                {isSignUp ? "Create Account" : "Sign In"}
+              <Button type="submit" disabled={loading} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2">
+                {loading ? 'Loading...' : isSignUp ? "Create Account" : "Sign In"}
               </Button>
             </form>
 

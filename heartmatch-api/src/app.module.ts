@@ -3,11 +3,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { MessagesModule } from './messages/messages.module';
 import { LikesModule } from './likes/likes.module';
-import { MatchesModule } from './matches/matches.module';
+import { MatchesModule } from './matches/matches.module';	
+
 
 @Module({
-  imports: [PrismaModule, ProfilesModule, LikesModule, MatchesModule],
+  imports: [PrismaModule, ProfilesModule, MessagesModule, LikesModule, MatchesModule],
   controllers: [AppController],
   providers: [AppService],
 })

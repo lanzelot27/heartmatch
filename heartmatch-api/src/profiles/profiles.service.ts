@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateProfileDto } from './dto/create-profile.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class ProfilesService {
@@ -13,12 +16,18 @@ export class ProfilesService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  create(data: { email: string; name?: string; bio?: string }) {
-    return this.prisma.user.create({ data });
+  async create(data: CreateProfileDto) {
+    
+    const hashed = await bcrypt.hash(data.password, 10);
+    return this.prisma.user.create({ data: { ...data, password: hashed } });
   }
 
-  update(id: string, data: { name?: string; bio?: string }) {
-    return this.prisma.user.update({ where: { id }, data });
+  async update(id: string, data: UpdateProfileDto) {
+    let updateData = { ...data };
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+    return this.prisma.user.update({ where: { id }, data: updateData });
   }
 
   remove(id: string) {

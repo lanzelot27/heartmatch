@@ -13,6 +13,7 @@ import { showNotification, requestNotificationPermission } from "@/lib/notificat
 export function DatingApp() {
   const [currentPage, setCurrentPage] = useState<"discovery" | "matches" | "chat" | "profile">("discovery")
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
+  const [chatPeer, setChatPeer] = useState<any | null>(null)
   const [darkMode, setDarkMode] = useState(false)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const { user, logout, getMatches } = useAppStore()
@@ -34,8 +35,9 @@ export function DatingApp() {
     logout()
   }
 
-  const handleChatClick = (matchId: string) => {
+  const handleChatClick = (matchId: string, otherUser: any) => {
     setSelectedMatchId(matchId)
+    setChatPeer(otherUser)
     setCurrentPage("chat")
   }
 
@@ -43,6 +45,8 @@ export function DatingApp() {
     requestNotificationPermission()
     setNotificationsEnabled(true)
   }
+
+  const handleGoToDiscovery = () => setCurrentPage("discovery")
 
   return (
     <div className={darkMode ? "dark" : ""}>
@@ -85,8 +89,10 @@ export function DatingApp() {
         {/* Main Content */}
         <main className="max-w-6xl mx-auto px-4 py-8">
           {currentPage === "discovery" && <DiscoveryPage />}
-          {currentPage === "matches" && <MatchesPage onChatClick={handleChatClick} />}
-          {currentPage === "chat" && selectedMatchId && <ChatPage matchId={selectedMatchId} />}
+          {currentPage === "matches" && <MatchesPage onChatClick={handleChatClick} onGoToDiscovery={handleGoToDiscovery} />}
+          {currentPage === "chat" && selectedMatchId && (
+            <ChatPage matchId={selectedMatchId} onBack={() => setCurrentPage("matches")} otherUser={chatPeer} />
+          )}
           {currentPage === "profile" && <ProfilePage />}
         </main>
 

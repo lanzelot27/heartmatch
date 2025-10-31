@@ -10,6 +10,9 @@ generator client {
     email     String   @unique
     name      String?
     bio       String?
+    password  String
+    age       Int
+    profileImage String?
     photos    Photo[]
     likesFrom Like[]   @relation("LikesFrom")
     likesTo   Like[]   @relation("LikesTo")
@@ -40,7 +43,9 @@ generator client {
     userA   User   @relation("MatchesA", fields: [userAId], references: [id])
     userB   User   @relation("MatchesB", fields: [userBId], references: [id])
     createdAt DateTime @default(now())
+    @@unique([userAId, userBId])
   }
+  
   model Message {
     id        String   @id @default(cuid())
     matchId   String

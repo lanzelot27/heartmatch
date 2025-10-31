@@ -1,26 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { UpdateMatchDto } from './dto/update-match.dto';
 
 @Injectable()
 export class MatchesService {
+  constructor(private prisma: PrismaService) {}
+
   create(createMatchDto: CreateMatchDto) {
-    return 'This action adds a new match';
+    return this.prisma.match.create({ data: createMatchDto });
   }
 
   findAll() {
-    return `This action returns all matches`;
+    return this.prisma.match.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} match`;
+  findForUser(userId: string) {
+    return this.prisma.match.findMany({
+      where: {
+        OR: [{ userAId: userId }, { userBId: userId }],
+      },
+    });
   }
 
-  update(id: number, updateMatchDto: UpdateMatchDto) {
-    return `This action updates a #${id} match`;
+  findOne(id: string) {
+    return this.prisma.match.findUnique({ where: { id } });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} match`;
+  update(id: string, updateMatchDto: UpdateMatchDto) {
+    return this.prisma.match.update({ where: { id }, data: updateMatchDto });
+  }
+
+  remove(id: string) {
+    return this.prisma.match.delete({ where: { id } });
   }
 }
