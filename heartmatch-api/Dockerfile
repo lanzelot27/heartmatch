@@ -1,46 +1,33 @@
-# Multi-stage build for NestJS
-FROM node:18-alpine AS builder
-
+# --- Build Stage ---
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files
+# Copy dependencies and Prisma
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
 RUN npm ci
-
-# Copy source code
 COPY . .
 
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
-# Generate Prisma Client
+# Generate Prisma client and build app
 RUN npx prisma generate
-
-# Build the application
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine
-
+# --- Production Stage ---
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Copy package files
+# Copy only what’s needed
 COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install production dependencies only
 RUN npm ci --only=production
 
-# Copy built application from builder
+COPY prisma ./prisma/
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Expose port
 EXPOSE 3001
 
-# Run migrations and start server
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
-
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
