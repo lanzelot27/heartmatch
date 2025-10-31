@@ -13,8 +13,28 @@ export function showNotification(title: string, options?: NotificationOptions) {
   }
 }
 
-export function requestNotificationPermission() {
-  if ("Notification" in window && Notification.permission === "default") {
-    Notification.requestPermission()
+export async function requestNotificationPermission(): Promise<boolean> {
+  if ("Notification" in window) {
+    if (Notification.permission === "granted") {
+      return true
+    }
+    if (Notification.permission === "denied") {
+      return false
+    }
+    const permission = await Notification.requestPermission()
+    return permission === "granted"
+  }
+  return false
+}
+
+export function isNotificationEnabled(): boolean {
+  if (typeof window === "undefined") return false
+  const saved = localStorage.getItem("heartmatch-notifications-enabled")
+  return saved === "true" && Notification.permission === "granted"
+}
+
+export function setNotificationEnabled(enabled: boolean) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("heartmatch-notifications-enabled", enabled.toString())
   }
 }

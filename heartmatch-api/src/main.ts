@@ -4,12 +4,19 @@ import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Configure CORS with environment variable support
+  const frontendUrl = process.env.FRONTEND_URL;
+  const allowedOrigins = frontendUrl
+    ? frontendUrl.split(',').map(url => url.trim())
+    : [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://172.27.64.1:3000', // add your LAN IP here if needed
+      ];
+  
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://172.27.64.1:3000', // add your LAN IP here if needed
-    ],
+    origin: allowedOrigins,
     credentials: true,
   });
   // Increase JSON body limit to handle large base64 images

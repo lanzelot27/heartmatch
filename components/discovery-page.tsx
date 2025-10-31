@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heart, X } from "lucide-react"
 import { getProfiles, postLike, getLikesForUser } from '@/lib/utils'
+import { showNotification, isNotificationEnabled } from '@/lib/notifications'
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 
 
@@ -88,7 +89,17 @@ export function DiscoveryPage() {
       setUserLikes(likes => [...likes, targetId])
       try {
         const res = await postLike(user.id, targetId);
-        setLikeMsg(res && res.match ? "It's a Match!" : "");
+        if (res && res.match) {
+          setLikeMsg("It's a Match!");
+          // Show notification for new match
+          if (isNotificationEnabled()) {
+            const matchedUserName = currentProfile.name || "Someone"
+            showNotification("New Match! ❤️", {
+              body: `You matched with ${matchedUserName}!`,
+              icon: "/favicon.svg",
+            })
+          }
+        }
         const likes = await getLikesForUser(user.id);
         setUserLikes(Array.isArray(likes) ? likes : []);
       } catch {

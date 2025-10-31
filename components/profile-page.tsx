@@ -32,10 +32,15 @@ export function ProfilePage() {
   }
 
   const handleSave = async () => {
+    const ageNum = Number.parseInt(editedAge)
+    if (isNaN(ageNum) || ageNum < 18) {
+      alert('You must be 18 years or older to use HeartMatch')
+      return
+    }
     try {
       const updatedUser = await updateProfile(user.id, {
         name: editedName,
-        age: Number.parseInt(editedAge),
+        age: ageNum,
         bio: editedBio,
         profileImage: editedImage,
       });
@@ -96,8 +101,15 @@ export function ProfilePage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Age</label>
                   <Input
                     type="number"
+                    min="18"
                     value={editedAge}
-                    onChange={(e) => setEditedAge(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      const numValue = Number.parseInt(value)
+                      if (value === "" || (numValue >= 18)) {
+                        setEditedAge(value)
+                      }
+                    }}
                     className="bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600"
                   />
                 </div>

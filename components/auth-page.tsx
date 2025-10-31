@@ -48,13 +48,19 @@ export function AuthPage({ onBack }: AuthPageProps) {
           setLoading(false)
           return
         }
+        const ageNum = Number.parseInt(age)
+        if (isNaN(ageNum) || ageNum < 18) {
+          setError("You must be 18 years or older to use HeartMatch")
+          setLoading(false)
+          return
+        }
         // Fake user creation: send to backend. WARNING: Do not send plaintext passwords in real apps!
         const newUser = await createProfile({
           email,
           name,
           bio,
           password,
-          age: Number.parseInt(age),
+          age: ageNum,
           profileImage, // send base64 image as profileImage
         })
         setUser(newUser)
@@ -140,8 +146,15 @@ export function AuthPage({ onBack }: AuthPageProps) {
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Age</label>
                       <Input
                         type="number"
+                        min="18"
                         value={age}
-                        onChange={(e) => setAge(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          const numValue = Number.parseInt(value)
+                          if (value === "" || (numValue >= 18)) {
+                            setAge(value)
+                          }
+                        }}
                         placeholder="18"
                         className="bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600"
                       />

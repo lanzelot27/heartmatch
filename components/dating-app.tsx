@@ -8,28 +8,65 @@ import { ChatPage } from "./chat-page"
 import { ProfilePage } from "./profile-page"
 import { Button } from "@/components/ui/button"
 import { Heart, Users, User, LogOut, Moon, Sun, Bell } from "lucide-react"
-import { showNotification, requestNotificationPermission } from "@/lib/notifications"
+import { showNotification, requestNotificationPermission, setNotificationEnabled } from "@/lib/notifications"
 
 export function DatingApp() {
   const [currentPage, setCurrentPage] = useState<"discovery" | "matches" | "chat" | "profile">("discovery")
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [chatPeer, setChatPeer] = useState<any | null>(null)
-  const [darkMode, setDarkMode] = useState(false)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
-  const { user, logout, getMatches } = useAppStore()
-  const previousMatchCount = useAppStore((state) => state.matches.length)
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('heartmatch-dark-mode')
+      return saved === 'true'
+    }
+    return false
+  })
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('heartmatch-notifications-enabled') === 'true' && Notification.permission === 'granted'
+    }
+    return false
+  })
+  const [previousMatchCount, setPreviousMatchCount] = useState(0)
+  const { user, logout } = useAppStore()
 
+  // Persist dark mode preference
   useEffect(() => {
-    if (notificationsEnabled && user) {
-      const currentMatches = getMatches()
-      if (currentMatches.length > 0) {
-        showNotification("New Match!", {
-          body: "You have a new match! Check it out.",
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' fontSize='75'>❤️</text></svg>",
-        })
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('heartmatch-dark-mode', darkMode.toString())
+    }
+  }, [darkMode])
+
+  // Poll for new matches when notifications are enabled
+  useEffect(() => {
+    if (!notificationsEnabled || !user) return
+
+    const checkForNewMatches = async () => {
+      try {
+        const { getMatchesForUser } = await import('@/lib/utils')
+        const matches = await getMatchesForUser(user.id)
+        const currentCount = matches.length
+
+        if (currentCount > previousMatchCount && previousMatchCount > 0) {
+          // New match detected
+          showNotification("New Match! ❤️", {
+            body: "You have a new match! Check it out.",
+            icon: "/favicon.svg",
+          })
+        }
+        setPreviousMatchCount(currentCount)
+      } catch (error) {
+        console.error('Failed to check for new matches:', error)
       }
     }
-  }, [notificationsEnabled, user, getMatches])
+
+    // Initial check
+    checkForNewMatches()
+    // Poll every 10 seconds
+    const interval = setInterval(checkForNewMatches, 10000)
+
+    return () => clearInterval(interval)
+  }, [notificationsEnabled, user, previousMatchCount])
 
   const handleLogout = () => {
     logout()
@@ -41,9 +78,18 @@ export function DatingApp() {
     setCurrentPage("chat")
   }
 
-  const handleEnableNotifications = () => {
-    requestNotificationPermission()
-    setNotificationsEnabled(true)
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission()
+    if (granted) {
+      setNotificationsEnabled(true)
+      setNotificationEnabled(true)
+      showNotification("Notifications Enabled", {
+        body: "You'll be notified about new matches and messages!",
+        icon: "/favicon.svg",
+      })
+    } else {
+      alert("Please enable notifications in your browser settings to receive alerts for new matches and messages.")
+    }
   }
 
   const handleGoToDiscovery = () => setCurrentPage("discovery")

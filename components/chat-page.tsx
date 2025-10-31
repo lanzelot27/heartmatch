@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, Send } from "lucide-react"
 import { getMessagesByMatch } from "@/lib/utils"
 import { io, Socket } from "socket.io-client"
+import { showNotification, isNotificationEnabled } from "@/lib/notifications"
 
 interface ChatPageProps {
   matchId: string
@@ -68,6 +69,17 @@ export function ChatPage({ matchId, onBack, otherUser }: ChatPageProps) {
           const tempMsg = prev.find((m) => m.id.startsWith('tmp-') && m.content === message.content && m.senderId === message.senderId)
           if (tempMsg) {
             return prev.map((m) => (m.id === tempMsg.id ? message : m))
+          }
+        }
+        // Show notification for messages from others (only if window is not focused/visible)
+        if (message.senderId !== user?.id && isNotificationEnabled()) {
+          const otherUserName = headerUser?.name || "Someone"
+          // Only show notification if tab/window is not visible
+          if (document.hidden) {
+            showNotification(`New message from ${otherUserName}`, {
+              body: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
+              icon: "/favicon.svg",
+            })
           }
         }
         return [...prev, message]
